@@ -4,8 +4,9 @@ set -euo pipefail
 # =========================
 # Config
 # =========================
-ERP_LOCAL_DIR="./data/landing/erp"
-CRM_LOCAL_DIR="./data/landing/crm"
+LOCAL_DATA_DIR="./data/landing"
+ERP_LOCAL_DIR="${LOCAL_DATA_DIR}/erp"
+CRM_LOCAL_DIR="${LOCAL_DATA_DIR}/crm"
 
 HDFS_ERP_DIR="/data/bronze/erp"
 HDFS_CRM_DIR="/data/bronze/crm"
