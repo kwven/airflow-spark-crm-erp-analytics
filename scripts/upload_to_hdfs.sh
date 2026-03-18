@@ -10,6 +10,7 @@ CRM_LOCAL_DIR="${LOCAL_DATA_DIR}/crm"
 
 HDFS_ERP_DIR="/data/bronze/erp"
 HDFS_CRM_DIR="/data/bronze/crm"
+HDFS_REJECT_DIR="/data/reject"
 # =========================
 # Checks
 # =========================
@@ -22,10 +23,10 @@ if [ ! -d "${LOCAL_DATA_DIR}" ]; then
   echo "[ERROR] Local data directory not found: ${LOCAL_DATA_DIR}"
   exit 1
 fi
-echo "Creating HDFS directories"
+echo "Creating HDFS directories + reject file directory"
 hdfs dfs -mkdir -p "${HDFS_ERP_DIR}"
 hdfs dfs -mkdir -p "${HDFS_CRM_DIR}"
-
+hdfs dfs -mkdir -p "${HDFS_REJECT_DIR}"
 # =========================
 # Upload ERP files
 # =========================
