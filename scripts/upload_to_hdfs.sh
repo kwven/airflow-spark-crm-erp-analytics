@@ -33,9 +33,9 @@ hdfs dfs -mkdir -p "${HDFS_REJECT_DIR}"
 if [ -d "${ERP_LOCAL_DIR}" ]; then
   echo "Uploading ERP CSV files"
   find "${ERP_LOCAL_DIR}" -maxdepth 1 -type f -name "*.csv" | while read -r file; do
-    filename="$(basename "${file}")"
+    filename="erp_$(basename "${file}")"
     echo "Uploading ${filename}"
-    hdfs dfs -put -f "${file}" "${HDFS_ERP_DIR}/"
+    hdfs dfs -put -f "${file}" "${HDFS_ERP_DIR}/${filename}"
   done
 else
   echo "[WARN] ERP directory not found: ${ERP_LOCAL_DIR}"
@@ -47,9 +47,9 @@ fi
 if [ -d "${CRM_LOCAL_DIR}" ]; then
   echo "Uploading CRM CSV files"
   find "${CRM_LOCAL_DIR}" -maxdepth 1 -type f -name "*.csv" | while read -r file; do
-    filename="$(basename "${file}")"
+    filename="crm_$(basename "${file}")"
     echo "Uploading ${filename}"
-    hdfs dfs -put -f "${file}" "${HDFS_CRM_DIR}/"
+    hdfs dfs -put -f "${file}" "${HDFS_CRM_DIR}/${filename}"
   done
 else
   echo "[WARN] CRM directory not found: ${CRM_LOCAL_DIR}"
