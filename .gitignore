@@ -1,4 +1,97 @@
-venv
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.iml
+
+# =========================
+# Environment / Secrets
+# =========================
 .env
-reports
-reports/* 
+.env.*
+
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+airflow/logs/
+spark/logs/
+
+# =========================
+# Python / Airflow
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python-version
+.venv/
+venv/
+env/
+.airflow/
+airflow/.pytest_cache/
+airflow/__pycache__/
+
+# =========================
+# Scala / SBT / Spark
+# =========================
+spark/target/
+spark/project/target/
+spark/project/project/
+spark/.bsp/
+spark/.metals/
+spark/.scala-build/
+*.class
+*.jar
+*.war
+*.ear
+
+# Keep build definitions
+!spark/build.sbt
+!spark/project/build.properties
+!spark/project/plugins.sbt
+
+# =========================
+# Java / JVM
+# =========================
+hs_err_pid*
+replay_pid*
+
+# =========================
+# Docker
+# =========================
+docker/**/*.log
+docker/data/
+docker/tmp/
+docker/volumes/
+
+# =========================
+# Jupyter / Notebooks
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Test / Coverage
+# =========================
+coverage/
+htmlcov/
+.cache/
+.pytest_cache/
+
+# =======================
+# reports for me 
+# =======================
+reports/
+reports/*
+.metals/
+.bloop/
+.vscode/
+target/
+project/target/
