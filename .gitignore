@@ -95,3 +95,4 @@ reports/*
 .vscode/
 target/
 project/target/
+.metals/
