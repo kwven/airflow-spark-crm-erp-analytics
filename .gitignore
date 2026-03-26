@@ -96,3 +96,4 @@ reports/*
 target/
 project/target/
 .metals/
+reports/
