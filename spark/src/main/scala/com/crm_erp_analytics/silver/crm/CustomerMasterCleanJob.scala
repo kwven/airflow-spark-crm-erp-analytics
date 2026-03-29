@@ -19,7 +19,7 @@ import javax.xml.crypto.Data
 // Load the cleaned data to the silver layer
 //---------------
 
-object CustomerMasterClean{
+object CustomerMasterCleanJob{
     def extract(spark: SparkSession): DataFrame ={
         IOUtils.readCsv(spark,Config.Bronze.customerMaster)
     }
