@@ -1,5 +1,5 @@
 package com.crm_erp_analytics.silver.crm
-import org.apache.spark.sql.functions.{col,row_number,to_timestamp,trim,upper,when}
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import com.crm_erp_analytics.common.Config
@@ -26,7 +26,7 @@ object CustomerMasterCleanJob{
     def transform(df: DataFrame): DataFrame ={
         // start by creating a tag for duplicated id of sustomer and take only the newest ones 
         val windowpar = Window.partitionBy(col("cst_id")).orderBy(col("cst_create_date").desc)
-        val df_with_date = df.withColumn("cst_create_date",to_timestamp(col("cst_create_date"),"yyyy-MM-dd"))
+        val df_with_date = df.withColumn("cst_create_date",to_date(col("cst_create_date"),"yyyy-MM-dd"))
         val df_tag = df_with_date.withColumn("tag",row_number().over(windowpar))
         val df_nodup = df_tag.filter(col("tag") === 1)
         // trim the firstname and lastname
