@@ -16,7 +16,8 @@ object ProductMasterCleanJob{
     def transform(df:DataFrame): DataFrame = {
         val df_cat = df.withColumn("cat_id",substring(col("prd_key"),1,5))
         .withColumn("prd_key",substring(col("prd_key"),7,10000))
-        val df_trimmed = df_cat.withColumn("prd_nm",trim(col("prd_nm")))
+        val df_cat_replaced = df_cat.withColumn("cat_id",regexp_replace(col("cat_id"),"-","_"))
+        val df_trimmed = df_cat_replaced.withColumn("prd_nm",trim(col("prd_nm")))
         val df_cost = df_trimmed.withColumn("prd_cost",when(col("prd_cost").isNull,lit(0.0)).otherwise(col("prd_cost").cast("double")))
         val df_line = df_cost.withColumn("prd_line",when(upper(trim(col("prd_line"))) === "M", "Mountain").when(upper(trim(col("prd_line"))) === "R", "Road").when(upper(trim(col("prd_line"))) === "S", "other Sales").when(upper(trim(col("prd_line"))) === "T", "Touring").otherwise("Unkown"))
         val df_with_date = df_line.withColumn("prd_end_dt",to_date(col("prd_end_dt"),"yyyy-MM-dd"))     
