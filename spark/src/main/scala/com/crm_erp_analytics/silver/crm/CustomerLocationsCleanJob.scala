@@ -14,7 +14,8 @@ object CustomerLocationsCleanJob{
     }
     def transform(df:DataFrame): DataFrame = {
         val df_clean_cid = df.withColumn("CID",regexp_replace(col("CID"),"-",""))
-        val df_clean = df_clean_cid.withColumn("CNTRY",when(upper(trim(col("CNTRY"))).isin("US","USA"),"United States").when(upper(trim(col("CNTRY"))) === "DE","Germany").when(upper(trim(col("CNTRY"))) === "" || col("CNTRY").isNull,"Unkown").otherwise(trim(col("CNTRY"))))
+        val df_clean_cntry = df_clean_cid.withColumn("CNTRY",when(upper(trim(col("CNTRY"))).isin("US","USA"),"United States").when(upper(trim(col("CNTRY"))) === "DE","Germany").when(upper(trim(col("CNTRY"))) === "" || col("CNTRY").isNull,"Unkown").otherwise(trim(col("CNTRY"))))
+        val df_clean = DataFrameUtils.addTechnicalColumns(df_clean_cntry)
         df_clean
     }
     def load(df: DataFrame): Unit = {
