@@ -16,7 +16,8 @@ object CustomerDemographicsCleanJob{
         val df_clean_cid = df.withColumn("CID",when(col("CID") like "NAS%",substring(col("CID"),4,1000)).otherwise(col("CID")))
         val df_clean_bdate = df_clean_cid.withColumn("BDATE",to_date(col("BDATE"),"yyyy-MM-dd"))
         .withColumn("BDATE",when(col("BDATE") >= current_date(),null).otherwise(col("BDATE")))
-        val df_clean = df_clean_bdate.withColumn("GEN",when(upper(trim(col("GEN"))).isin("F","FEMALE"),lit("Female")).when(upper(trim(col("GEN"))).isin("M","MALE"),lit("Male")).otherwise("Unknown"))
+        val df_clean_gen = df_clean_bdate.withColumn("GEN",when(upper(trim(col("GEN"))).isin("F","FEMALE"),lit("Female")).when(upper(trim(col("GEN"))).isin("M","MALE"),lit("Male")).otherwise("Unknown"))
+        val df_clean = DataFrameUtils.addTechnicalColumns(df_clean_gen)
         df_clean
     }
     def load(df: DataFrame): Unit = {
