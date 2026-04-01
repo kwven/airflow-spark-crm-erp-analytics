@@ -20,7 +20,8 @@ object SalesTransactionsJob {
         // cleaning slaes and price columns 
         val df_clean_sales = df_clean_dates.withColumn("sls_sales",when(col("sls_sales") <= 0 || col("sls_sales").isNull || col("sls_sales") =!= abs(col("sls_price").cast("double")) * col("sls_quantity"),abs(col("sls_price").cast("double")) * col("sls_quantity")).otherwise(col("sls_sales").cast("double")))
         val df_clean_price = df_clean_sales.withColumn("sls_price",when(col("sls_price") <= 0 || col("sls_price").isNull ,abs(col("sls_sales").cast("double")) / col("sls_quantity")).otherwise(col("sls_price").cast("double")))
-      df_clean_price
+        val df_clean = DataFrameUtils.addTechnicalColumns(df_clean_price)
+      df_clean
     }
     def load(df: DataFrame): Unit = {
       IOUtils.writeParquet(df,Config.Silver.salesTransactionsClean)
