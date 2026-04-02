@@ -1,0 +1,202 @@
+x-airflow-common: &airflow-common
+  build:
+    context: ./docker/airflow
+  user: "${AIRFLOW_UID:-50000}:0"
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow:5432/airflow
+    AIRFLOW_CONN_SPARK_DEFAULT: spark://spark-master:7077
+    HDFS_BASE_URI: hdfs://namenode:9000
+    JDBC_URL: jdbc:postgresql://postgres-warehouse:5432/warehouse
+    JDBC_USER: warehouse_user
+    JDBC_PASSWORD: warehouse_pass
+    SPARK_APP_JAR: /opt/airflow/spark/target/scala-2.12/crm-erp-analytic-spark_2.12-0.1.0.jar
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/plugins:/opt/airflow/plugins
+    - ./spark:/opt/airflow/spark
+  networks:
+    - crm_erp_net
+
+services:
+  namenode:
+    image: apache/hadoop:3
+    container_name: namenode
+    hostname: namenode
+    restart: unless-stopped
+    environment:
+      HDFS_NAMENODE_USER: root
+      CLUSTER_NAME: crm-erp-analytics
+    command: ["hdfs", "namenode"]
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+      - ./data:/data:ro
+    networks:
+      - crm_erp_net
+
+  datanode:
+    image: apache/hadoop:3
+    container_name: datanode
+    hostname: datanode
+    restart: unless-stopped
+    depends_on:
+      - namenode
+    environment:
+      HDFS_DATANODE_USER: root
+    command: ["hdfs", "datanode"]
+    ports:
+      - "9864:9864"
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    networks:
+      - crm_erp_net
+
+  spark-master:
+    image: spark:3.5.1-scala2.12-java11-ubuntu
+    container_name: spark-master
+    hostname: spark-master
+    restart: unless-stopped
+    command:
+      [
+        "/opt/spark/bin/spark-class",
+        "org.apache.spark.deploy.master.Master",
+        "--host",
+        "spark-master",
+        "--port",
+        "7077",
+        "--webui-port",
+        "8080"
+      ]
+    ports:
+      - "7077:7077"
+      - "8080:8080"
+    networks:
+      - crm_erp_net
+
+  spark-worker:
+    image: spark:3.5.1-scala2.12-java11-ubuntu
+    container_name: spark-worker
+    hostname: spark-worker
+    restart: unless-stopped
+    depends_on:
+      - spark-master
+    command:
+      [
+        "/opt/spark/bin/spark-class",
+        "org.apache.spark.deploy.worker.Worker",
+        "spark://spark-master:7077",
+        "--webui-port",
+        "8081"
+      ]
+    ports:
+      - "8081:8081"
+    networks:
+      - crm_erp_net
+
+  postgres-airflow:
+    image: postgres:15-alpine
+    container_name: postgres-airflow
+    hostname: postgres-airflow
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pg_airflow_data:/var/lib/postgresql/data
+    networks:
+      - crm_erp_net
+
+  postgres-warehouse:
+    image: postgres:15-alpine
+    container_name: postgres-warehouse
+    hostname: postgres-warehouse
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: warehouse
+      POSTGRES_USER: warehouse_user
+      POSTGRES_PASSWORD: warehouse_pass
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "warehouse_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pg_warehouse_data:/var/lib/postgresql/data
+      - ./sql/schemas:/docker-entrypoint-initdb.d
+    networks:
+      - crm_erp_net
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    hostname: airflow-init
+    depends_on:
+      postgres-airflow:
+        condition: service_healthy
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate && \
+        airflow users create \
+          --username airflow \
+          --firstname Airflow \
+          --lastname Admin \
+          --role Admin \
+          --email airflow@example.com \
+          --password airflow
+    restart: "no"
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow-webserver
+    hostname: airflow-webserver
+    depends_on:
+      postgres-airflow:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+      spark-master:
+        condition: service_started
+    command: webserver
+    ports:
+      - "8088:8080"
+    restart: unless-stopped
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    hostname: airflow-scheduler
+    depends_on:
+      postgres-airflow:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+      spark-master:
+        condition: service_started
+    command: scheduler
+    restart: unless-stopped
+
+networks:
+  crm_erp_net:
+    driver: bridge
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode:
+  pg_warehouse_data:
+  pg_airflow_data:
