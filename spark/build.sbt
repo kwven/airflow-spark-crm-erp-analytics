@@ -5,7 +5,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "crm-erp-analytic-spark",
     libraryDependencies ++= Seq(
-      "org.apache.spark" %% "spark-sql" % "3.5.1" % "provided",
+      "org.apache.spark" %% "spark-sql" % "3.5.8" % "provided",
       "com.typesafe" % "config" % "1.4.3",
       "org.postgresql" % "postgresql" % "42.7.7"
     )
