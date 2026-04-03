@@ -4,11 +4,16 @@ x-airflow-common: &airflow-common
   user: "${AIRFLOW_UID:-50000}:0"
   environment:
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-api-server:8080/execution/
+    AIRFLOW__API_AUTH__JWT_SECRET: airflow_jwt_secret
+    AIRFLOW__API_AUTH__JWT_ISSUER: airflow
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow:5432/airflow
     AIRFLOW_CONN_SPARK_DEFAULT: spark://spark-master:7077
-    HDFS_BASE_URI: hdfs://namenode:9000
+    PYTHONPATH: /opt/airflow
+    HDFS_BASE_URI: hdfs://namenode:8020
     JDBC_URL: jdbc:postgresql://postgres-warehouse:5432/warehouse
     JDBC_USER: warehouse_user
     JDBC_PASSWORD: warehouse_pass
@@ -17,48 +22,67 @@ x-airflow-common: &airflow-common
     - ./airflow/dags:/opt/airflow/dags
     - ./airflow/logs:/opt/airflow/logs
     - ./airflow/plugins:/opt/airflow/plugins
+    - ./scripts:/opt/airflow/scripts
     - ./spark:/opt/airflow/spark
+    - ./data:/opt/airflow/data
   networks:
     - crm_erp_net
 
 services:
   namenode:
-    image: apache/hadoop:3
+    image: apache/hadoop:3.4.3
     container_name: namenode
     hostname: namenode
+    user: "0:0"
     restart: unless-stopped
     environment:
       HDFS_NAMENODE_USER: root
       CLUSTER_NAME: crm-erp-analytics
-    command: ["hdfs", "namenode"]
+      HADOOP_CONF_DIR: /opt/hadoop/etc/hadoop
+    command:
+      [
+        "bash",
+        "-lc",
+        "if [ ! -d /hadoop/dfs/name/current ]; then hdfs namenode -format -force -nonInteractive; fi && hdfs namenode"
+      ]
     ports:
       - "9870:9870"
-      - "9000:9000"
+      - "8020:8020"
     volumes:
       - hadoop_namenode:/hadoop/dfs/name
       - ./data:/data:ro
+      - ./docker/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+      - ./docker/hadoop/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
     networks:
       - crm_erp_net
 
   datanode:
-    image: apache/hadoop:3
+    image: apache/hadoop:3.4.3
     container_name: datanode
     hostname: datanode
+    user: "0:0"
     restart: unless-stopped
     depends_on:
       - namenode
     environment:
       HDFS_DATANODE_USER: root
+      HADOOP_CONF_DIR: /opt/hadoop/etc/hadoop
     command: ["hdfs", "datanode"]
     ports:
       - "9864:9864"
     volumes:
       - hadoop_datanode:/hadoop/dfs/data
+      - ./docker/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+      - ./docker/hadoop/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
     networks:
       - crm_erp_net
 
   spark-master:
-    image: spark:3.5.1-scala2.12-java11-ubuntu
+    build:
+      context: ./docker/spark
+      args:
+        SPARK_VERSION: 3.5.8
+        HADOOP_MAJOR: 3
     container_name: spark-master
     hostname: spark-master
     restart: unless-stopped
@@ -80,7 +104,11 @@ services:
       - crm_erp_net
 
   spark-worker:
-    image: spark:3.5.1-scala2.12-java11-ubuntu
+    build:
+      context: ./docker/spark
+      args:
+        SPARK_VERSION: 3.5.8
+        HADOOP_MAJOR: 3
     container_name: spark-worker
     hostname: spark-worker
     restart: unless-stopped
@@ -130,7 +158,7 @@ services:
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "warehouse_user"]
+      test: ["CMD", "pg_isready", "-U", "warehouse_user", "-d", "warehouse"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -145,6 +173,8 @@ services:
     container_name: airflow-init
     hostname: airflow-init
     depends_on:
+      airflow-permissions:
+        condition: service_completed_successfully
       postgres-airflow:
         condition: service_healthy
     entrypoint: /bin/bash
@@ -161,10 +191,27 @@ services:
           --password airflow
     restart: "no"
 
-  airflow-webserver:
+  airflow-permissions:
     <<: *airflow-common
-    container_name: airflow-webserver
-    hostname: airflow-webserver
+    container_name: airflow-permissions
+    hostname: airflow-permissions
+    user: "0:0"
+    depends_on:
+      postgres-airflow:
+        condition: service_healthy
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        mkdir -p /opt/airflow/logs/dag_processor && \
+        chown -R "${AIRFLOW_UID:-50000}:0" /opt/airflow/logs && \
+        chmod -R ug+rwX /opt/airflow/logs
+    restart: "no"
+
+  airflow-api-server:
+    <<: *airflow-common
+    container_name: airflow-api-server
+    hostname: airflow-api-server
     depends_on:
       postgres-airflow:
         condition: service_healthy
@@ -172,7 +219,7 @@ services:
         condition: service_completed_successfully
       spark-master:
         condition: service_started
-    command: webserver
+    command: api-server
     ports:
       - "8088:8080"
     restart: unless-stopped
@@ -189,6 +236,18 @@ services:
       spark-master:
         condition: service_started
     command: scheduler
+    restart: unless-stopped
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    container_name: airflow-dag-processor
+    hostname: airflow-dag-processor
+    depends_on:
+      postgres-airflow:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    command: dag-processor
     restart: unless-stopped
 
 networks:
