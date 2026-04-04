@@ -2,7 +2,6 @@ from airflow import DAG
 from airflow.providers.standard.operators.python import PythonOperator
 from datetime import datetime
 from airflow.providers.standard.operators.empty import EmptyOperator
-
 ## functions to ingest and check data imported to hdfs 
 from scripts.ingest_to_hdfs import ingest_to_hdfs
 from scripts.check_hdfs_data import check_hdfs_data
