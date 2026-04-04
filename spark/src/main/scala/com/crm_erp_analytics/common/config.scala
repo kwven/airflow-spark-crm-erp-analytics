@@ -5,6 +5,16 @@ import com.typesafe.config.{ConfigFactory, Config => TypesafeConfig}
 object Config {
 
   private val conf: TypesafeConfig = ConfigFactory.load()
+  private def optionalString(path: String): Option[String] =
+    if (conf.hasPath(path)) {
+      Option(conf.getString(path)).map(_.trim).filter(_.nonEmpty)
+    } else {
+      None
+    }
+
+  object Spark {
+    val master: Option[String] = optionalString("app.spark.master")
+  }
 
   object Hdfs {
     val baseUri: String = conf.getString("app.hdfs.base-uri")
@@ -18,22 +28,22 @@ object Config {
 
   object Bronze {
     val customerMaster: String =
-      s"${Paths.bronzeBase}/crm/crm_customer_master.csv"
+      s"${Paths.bronzeBase}/crm/customer_master.csv"
 
     val customerDemographics: String =
-      s"${Paths.bronzeBase}/crm/crm_customer_demographics.csv"
+      s"${Paths.bronzeBase}/crm/customer_demographics.csv"
 
     val customerLocations: String =
-      s"${Paths.bronzeBase}/crm/crm_customer_locations.csv"
+      s"${Paths.bronzeBase}/crm/customer_locations.csv"
 
     val productMaster: String =
-      s"${Paths.bronzeBase}/erp/erp_product_master.csv"
+      s"${Paths.bronzeBase}/erp/product_master.csv"
 
     val productCategories: String =
-      s"${Paths.bronzeBase}/erp/erp_product_categories.csv"
+      s"${Paths.bronzeBase}/erp/product_categories.csv"
 
     val salesTransactions: String =
-      s"${Paths.bronzeBase}/erp/erp_sales_transactions.csv"
+      s"${Paths.bronzeBase}/erp/sales_transactions.csv"
   }
 
   object Silver {
