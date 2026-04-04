@@ -205,7 +205,10 @@ services:
       - |
         mkdir -p /opt/airflow/logs/dag_processor && \
         chown -R "${AIRFLOW_UID:-50000}:0" /opt/airflow/logs && \
-        chmod -R ug+rwX /opt/airflow/logs
+        chmod -R ug+rwX /opt/airflow/logs && \
+        chgrp -R 0 /opt/airflow/spark && \
+        find /opt/airflow/spark -type d -exec chmod g+rws {} + && \
+        find /opt/airflow/spark -type f -exec chmod g+rw {} +
     restart: "no"
 
   airflow-api-server:
