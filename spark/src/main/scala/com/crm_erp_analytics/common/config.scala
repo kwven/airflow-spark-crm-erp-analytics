@@ -65,7 +65,11 @@ object Config {
     val salesTransactionsClean: String =
       s"${Paths.silverBase}/erp/erp_sales_transactions_clean"
   }
-
+  object Gold {
+    val dimCustomer: String = "gold.dim_customer"
+    val dimProduct: String = "gold.dim_product"
+    val factSales: String= "gold.fact_sales"
+  }
   object Rejects {
     val salesTransactionsReject: String =
       s"${Paths.rejectBase}/sales_transactions_reject"

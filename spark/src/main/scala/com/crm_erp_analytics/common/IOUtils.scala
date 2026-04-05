@@ -29,4 +29,38 @@ object IOUtils {
       .format(Config.WriteOptions.format)
       .save(path)
   }
+
+  def readJdbcTable(spark: SparkSession, table: String): DataFrame = {
+    spark.read
+      .format("jdbc")
+      .option("url", Config.Jdbc.url)
+      .option("dbtable", table)
+      .option("user", Config.Jdbc.user)
+      .option("password", Config.Jdbc.password)
+      .option("driver", Config.Jdbc.driver)
+      .load()
+  }
+
+  def readJdbcQuery(spark: SparkSession, query: String, alias: String = "src"): DataFrame = {
+    spark.read
+      .format("jdbc")
+      .option("url", Config.Jdbc.url)
+      .option("dbtable", s"(${query}) ${alias}")
+      .option("user", Config.Jdbc.user)
+      .option("password", Config.Jdbc.password)
+      .option("driver", Config.Jdbc.driver)
+      .load()
+  }
+
+  def writeJdbcTable(df: DataFrame, table: String, mode: String = "append"): Unit = {
+    df.write
+      .format("jdbc")
+      .option("url", Config.Jdbc.url)
+      .option("dbtable", table)
+      .option("user", Config.Jdbc.user)
+      .option("password", Config.Jdbc.password)
+      .option("driver", Config.Jdbc.driver)
+      .mode(mode)
+      .save()
+  }
 }
