@@ -34,7 +34,7 @@ object FactSalesJob {
     df_clean
   }
   def load(df: DataFrame): Unit = {
-    IOUtils.writeJdbcTable(df,Config.Gold.factSales)
+    IOUtils.writeJdbcTable(df,Config.Gold.factSales,"overwrite")
   }
   def main(args: Array[String]): Unit = {
     val spark = SparkSessionFactory.create("FactSalesJob")

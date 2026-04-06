@@ -32,7 +32,7 @@ object DimProductJob {
     df_clean
   }
   def load(df: DataFrame): Unit = {
-    IOUtils.writeJdbcTable(df, "gold.dim_product", "overwrite")
+    IOUtils.writeJdbcTable(df, Config.Gold.dimProduct, "overwrite")
   }
   def main(args: Array[String]): Unit = {
     val spark = SparkSessionFactory.create("DimProductJob")
