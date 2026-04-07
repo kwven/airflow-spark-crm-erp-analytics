@@ -24,6 +24,7 @@ x-airflow-common: &airflow-common
     - ./airflow/plugins:/opt/airflow/plugins
     - ./scripts:/opt/airflow/scripts
     - ./spark:/opt/airflow/spark
+    - ./sql:/opt/airflow/sql:ro
     - ./data:/opt/airflow/data
   networks:
     - crm_erp_net
