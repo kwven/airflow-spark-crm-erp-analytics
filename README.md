@@ -25,6 +25,12 @@
 
 ![Star Schema](docs/star-schema.png)
 
+## End-to-End Data Pipeline in Airflow
+
+![Airflow DAG](docs/first_part_dag.png)
+
+![Airflow DAG](docs/seconde_part_dag.png)
+
 ## Dashboards
 
 ### Sales Overview
