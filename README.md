@@ -21,9 +21,6 @@
 
 ![Architecture](docs/architecture.png)
 
-## Data Model
-
-![Star Schema](docs/star-schema.png)
 
 ## End-to-End Data Pipeline in Airflow
 
